@@ -1,162 +1,2219 @@
 <!DOCTYPE html>
-<html lang="vi-VN">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kỷ Yếu CREI 3D Particles</title>
-    <style>
-        body, html { 
-            margin: 0; padding: 0; overflow: hidden; 
-            background: radial-gradient(circle at center, #1a1b41 0%, #05050a 100%); 
-            font-family: sans-serif; color: white; 
-        }
-        #loading { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            font-size: 18px; letter-spacing: 2px; color: #00ffff; 
-            text-shadow: 0 0 10px #00ffff; z-index: 10; 
-        }
-        #canvas-container { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Memoryzone 218 — Stage 4 Fixed Final Edition</title>
     
-    <!-- Import Three.js -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
+    <!-- Google Fonts: Fredoka Pop Chibi & Montserrat -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Montserrat:wght@500;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --neon-pink: #ff2d8d;
+            --neon-cyan: #00f2fe;
+            --neon-cyan-light: #d4fcff;
+            --neon-green: #00ff66;
+            --neon-violet: #a855f7;
+            --bg: #03040c;
         }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg);
+            font-family: 'Montserrat', sans-serif;
+            color: #fff;
+        }
+
+        #canvas-container {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+        }
+
+        #header-ui {
+            position: absolute;
+            top: 20px;
+            left: 25px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .brand-title {
+            font-family: 'Fredoka', cursive;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, #ffffff 0%, var(--neon-cyan) 50%, var(--neon-pink) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 25px rgba(0, 242, 254, 0.6);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brand-sub {
+            font-size: 10px;
+            letter-spacing: 1.8px;
+            color: rgba(255, 255, 255, 0.8);
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        /* PIP HUD Ở GÓC DƯỚI BÊN PHẢI */
+        #ai-hud {
+            position: absolute;
+            bottom: 22px;
+            right: 22px;
+            z-index: 30;
+            background: rgba(6, 9, 22, 0.9);
+            border: 1.5px solid rgba(0, 255, 102, 0.5);
+            border-radius: 18px;
+            padding: 10px;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.9), 0 0 22px rgba(0, 255, 102, 0.25);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .ai-header {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: var(--neon-green);
+            text-transform: uppercase;
+        }
+
+        .ai-dot {
+            width: 7px;
+            height: 7px;
+            background: var(--neon-green);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--neon-green);
+            animation: pulseDot 1.4s infinite ease-in-out;
+        }
+
+        @keyframes pulseDot {
+            0%, 100% { transform: scale(0.9); opacity: 0.6; }
+            50% { transform: scale(1.3); opacity: 1; }
+        }
+
+        #cam-wrapper {
+            position: relative;
+            width: 140px;
+            height: 105px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #010206;
+            border: 1px solid rgba(0, 255, 102, 0.2);
+        }
+
+        #webcam {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+            opacity: 0.25;
+        }
+
+        #hand-canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            transform: scaleX(-1);
+        }
+
+        .ai-status-pill {
+            font-size: 9px;
+            letter-spacing: 1px;
+            color: #d1ffe2;
+            background: rgba(0, 255, 102, 0.12);
+            padding: 4px 8px;
+            border-radius: 20px;
+            width: 100%;
+            text-align: center;
+            border: 1px solid rgba(0, 255, 102, 0.3);
+            white-space: nowrap;
+        }
+
+        .ai-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(0, 255, 102, 0.45);
+            color: #fff;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            text-transform: uppercase;
+        }
+
+        .ai-btn:hover {
+            background: rgba(0, 255, 102, 0.28);
+            border-color: var(--neon-green);
+            box-shadow: 0 0 12px rgba(0, 255, 102, 0.4);
+        }
+
+        /* FSM CONTROL BAR */
+        #fsm-ui {
+            position: absolute;
+            bottom: 24px;
+            left: 30px;
+            z-index: 10;
+            background: rgba(10, 14, 34, 0.88);
+            border: 1.5px solid rgba(0, 242, 254, 0.5);
+            border-radius: 40px;
+            padding: 8px 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 12px 45px rgba(0, 0, 0, 0.95), 0 0 25px rgba(0, 242, 254, 0.3);
+        }
+
+        .fsm-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            color: rgba(255, 255, 255, 0.8);
+            font-family: 'Montserrat', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            padding: 8px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .fsm-btn:hover {
+            color: #fff;
+            background: rgba(0, 242, 254, 0.2);
+        }
+
+        .fsm-btn.active {
+            color: #03040c;
+            background: linear-gradient(135deg, var(--neon-cyan-light), var(--neon-cyan));
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 20px rgba(0, 242, 254, 0.65);
+        }
+
+        #choreography-pill {
+            position: absolute;
+            bottom: 82px;
+            left: 30px;
+            z-index: 10;
+            font-size: 10.5px;
+            letter-spacing: 1.8px;
+            color: #b7fbff;
+            text-transform: uppercase;
+            pointer-events: none;
+            text-align: left;
+            background: rgba(10, 14, 32, 0.8);
+            padding: 6px 22px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 254, 0.4);
+            backdrop-filter: blur(12px);
+            white-space: nowrap;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+        }
+
+        #loading-screen {
+            position: fixed;
+            inset: 0;
+            background: #03040c;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            transition: opacity 0.5s ease;
+        }
+
+        .loader-spinner {
+            width: 46px;
+            height: 46px;
+            border: 3px solid rgba(0, 242, 254, 0.2);
+            border-top-color: var(--neon-cyan);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-text {
+            font-family: 'Fredoka', cursive;
+            font-size: 13px;
+            letter-spacing: 3px;
+            color: #79f7ff;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 900px) {
+            #fsm-ui { bottom: 16px; left: 16px; padding: 5px 8px; gap: 4px; max-width: calc(100vw - 165px); overflow-x: auto; }
+            .fsm-btn { font-size: 8px; padding: 6px 10px; }
+            #choreography-pill { bottom: 70px; left: 16px; font-size: 8.5px; padding: 4px 12px; }
+            #ai-hud { bottom: 16px; right: 16px; padding: 7px; }
+            #cam-wrapper { width: 110px; height: 82px; }
+        }
+    </style>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+            "@mediapipe/tasks-vision": "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.9/+esm"
+        }
+    }
     </script>
 </head>
 <body>
-    <div id="loading">ĐANG TẢI DỮ LIỆU 3D... VUI LÒNG ĐỢI</div>
+    <div id="loading-screen">
+        <div class="loader-spinner"></div>
+        <div class="loading-text">ĐANG KHỞI TẠO NỀN TẢNG ĐỒ HỌA 3D & AI...</div>
+    </div>
+
+    <div id="header-ui">
+        <div class="brand-title">✨ MEMORYZONE 218 ✨</div>
+        <div class="brand-sub">STAGE 4: MEDIAPIPE AI VISION & INTERACTION</div>
+    </div>
+
+    <!-- PIP HUD GIÁM SÁT 21 KHỚP XƯƠNG GÓC DƯỚI PHẢI -->
+    <div id="ai-hud">
+        <div class="ai-header">
+            <span>AI TRACKING</span>
+            <div class="ai-dot" id="ai-dot"></div>
+        </div>
+        <div id="cam-wrapper">
+            <video id="webcam" playsinline autoplay muted></video>
+            <canvas id="hand-canvas"></canvas>
+        </div>
+        <div class="ai-status-pill" id="ai-status">CHỜ CAMERA...</div>
+        <button class="ai-btn" id="toggle-cam-btn">BẬT CAMERA AI</button>
+    </div>
+
+    <div id="choreography-pill">TRẠNG THÁI 1: SÁCH ĐÓNG · 4 ẢNH TRƯỚC, 4 ẢNH SAU DÍNH PHẲNG VÀO BÌA</div>
+
+    <!-- THANH ĐIỀU KHIỂN TRẠNG THÁI FSM -->
+    <div id="fsm-ui">
+        <button class="fsm-btn active" data-state="0">1. Đóng Sách</button>
+        <button class="fsm-btn" data-state="1">2. Mở Sách</button>
+        <button class="fsm-btn" data-state="3">3. Bung Ánh Sáng</button>
+        <button class="fsm-btn" data-state="4">4. Tinh Cầu Đặc</button>
+        <button class="fsm-btn" data-state="5">5. Xem Ảnh</button>
+    </div>
+
     <div id="canvas-container"></div>
 
     <script type="module">
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+        import { FilesetResolver, HandLandmarker } from '@mediapipe/tasks-vision';
 
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x05050a, 0.02);
+        const STATES = {
+            BOOK_CLOSED: 0,
+            BOOK_OPENING: 1,
+            OPEN_HOLD: 2,
+            PARTICLE_BURST: 3,
+            SCATTER_GALAXY: 4,
+            FOCUS_PHOTO: 5
+        };
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 5, 25);
+        const BOOK = {
+            width: 4.6,
+            height: 6.6,
+            thickness: 0.08,
+            bevel: 0.03,
+            spineThickness: 0.50,
+            pageCount: 6,
+            maxOpenRad: (170 / 180) * Math.PI
+        };
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
-        container.appendChild(renderer.domElement);
+        const GALAXY_PARTICLES = 5400;
+        const EXTRA_PAGE_PARTICLES = 36000;
+        const TOTAL_BUFFER_PARTICLES = GALAXY_PARTICLES + EXTRA_PAGE_PARTICLES;
+        const FLARE_COUNT = 360;
 
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.autoRotate = true;
-        controls.autoRotateSpeed = 1.0;
+        const COVER_PHOTO_COUNT = 8;
+        const EXTRA_GALAXY_PHOTO_COUNT = 4;
+        const TOTAL_PHOTO_COUNT = COVER_PHOTO_COUNT + EXTRA_GALAXY_PHOTO_COUNT;
 
-        const mainGroup = new THREE.Group();
-        scene.add(mainGroup);
+        let scene, camera, renderer, composer, controls;
+        let albumRoot, spineMesh;
+        let leftCoverHinge, rightCoverHinge;
+        let chibiCoverMat, titleMesh, contourLineMesh;
+        let innerSparksLight;
 
-        const loader = new GLTFLoader();
+        let masterParticleMesh, morphShaderMat;
+        let pBookPos, pOpenedPos, pBurstDir, pGalaxyPos, pColors, pSizesClosed, pSizesGalaxy, pPhases, pPageFlags, pArchParams, pIsExtra;
 
-        // Biến điều chỉnh tỷ lệ nếu 2 file AI xuất ra bị chênh lệch kích thước
-        const BUILDING_SCALE = 2.0; 
-        const PEOPLE_SCALE = 1.0;
+        let heroGiantHearts = [];
+        let stars3Point = [], stars4Point = [], stars5Point = [];
+        let allPhotoCards = [];
+        let chibiProps = [];
+        let selectedPhotoIndex = 0;
 
-        // Thuật toán chuyển đổi Mesh thành Hệ thống hạt (Particles)
-        function createParticlesFromMesh(gltf, scale, primaryColorHex, hasGoldAccents, offsetZ) {
-            gltf.scene.traverse((child) => {
-                if (child.isMesh) {
-                    const positions = child.geometry.attributes.position;
-                    const ptCount = positions.count;
-                    
-                    const ptsPos = new Float32Array(ptCount * 3);
-                    const ptsCol = new Float32Array(ptCount * 3);
-                    
-                    const primaryColor = new THREE.Color(primaryColorHex);
-                    const goldColor = new THREE.Color(0xffd700);
+        let crossFlareMesh, flareShaderMat;
 
-                    for(let i = 0; i < ptCount; i++) {
-                        ptsPos[i*3] = positions.getX(i) * scale;
-                        ptsPos[i*3+1] = positions.getY(i) * scale;
-                        ptsPos[i*3+2] = positions.getZ(i) * scale + offsetZ;
+        let clock = new THREE.Clock();
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
 
-                        let c = primaryColor;
-                        if (hasGoldAccents && Math.random() > 0.85) c = goldColor;
+        // ==========================================
+        // KHAI BÁO BIẾN TOÀN CỤC CHO AI (FIX TRIỆT ĐỂ LỖI REFERENCEERROR)
+        // ==========================================
+        let handLandmarker = null;
+        let webcamRunning = false;
+        let lastVideoTime = -1;
+        let isProcessingAI = false;
 
-                        ptsCol[i*3] = c.r;
-                        ptsCol[i*3+1] = c.g;
-                        ptsCol[i*3+2] = c.b;
-                    }
+        let gestureDebounceTimer = 0;
+        let swipeDebounceTimer = 0;
+        let prevIndexTipY = null;
+        let smoothedPalmSize = 0.22;
+        let targetCameraDistance = 17.0;
+        let handRotationBias = 0.0; // Đảm bảo luôn tồn tại với giá trị mặc định 0.0
 
-                    const geo = new THREE.BufferGeometry();
-                    geo.setAttribute('position', new THREE.BufferAttribute(ptsPos, 3));
-                    geo.setAttribute('color', new THREE.BufferAttribute(ptsCol, 3));
+        const webcamElement = document.getElementById('webcam');
+        const handCanvas = document.getElementById('hand-canvas');
+        const handCtx = handCanvas.getContext('2d');
+        const toggleCamBtn = document.getElementById('toggle-cam-btn');
+        const aiStatus = document.getElementById('ai-status');
+        const aiDot = document.getElementById('ai-dot');
+        const fsmButtons = document.querySelectorAll('.fsm-btn');
+        const choreoPill = document.getElementById('choreography-pill');
 
-                    const mat = new THREE.PointsMaterial({
-                        size: 0.05,
-                        vertexColors: true,
-                        transparent: true,
-                        opacity: 0.8,
-                        blending: THREE.AdditiveBlending,
-                        depthWrite: false
-                    });
+        const FSM = {
+            currentState: STATES.BOOK_CLOSED,
+            targetState: STATES.BOOK_CLOSED,
+            stateProgress: 0.0,
+            stateTime: 0.0,
+            transitionDuration: 1.8,
+            openProgressLerp: 0.0,
+            burstProgressLerp: 0.0,
+            galaxyProgressLerp: 0.0,
+            bookMeshOpacityLerp: 1.0,
+            galaxyRotAngle: 0.0,
+            vibrateIntensity: 0.0,
 
-                    const points = new THREE.Points(geo, mat);
-                    
-                    // Căn giữa mô hình
-                    geo.computeBoundingBox();
-                    const center = new THREE.Vector3();
-                    geo.boundingBox.getCenter(center);
-                    points.position.sub(center);
-                    points.position.y += Math.abs(geo.boundingBox.min.y); 
-                    
-                    mainGroup.add(points);
+            setTarget(newState, photoIdx = -1) {
+                if (photoIdx >= 0) selectedPhotoIndex = photoIdx;
+                if (this.targetState === newState) return;
+
+                if (this.handlers[this.currentState]?.onExit) {
+                    this.handlers[this.currentState].onExit();
                 }
+
+                this.targetState = newState;
+                this.stateProgress = 0.0;
+                this.stateTime = 0.0;
+
+                if (newState === STATES.BOOK_OPENING) this.transitionDuration = 2.0;
+                else if (newState === STATES.OPEN_HOLD) this.transitionDuration = 1.0;
+                else if (newState === STATES.PARTICLE_BURST) this.transitionDuration = 1.1;
+                else if (newState === STATES.SCATTER_GALAXY) this.transitionDuration = 2.4;
+                else if (newState === STATES.FOCUS_PHOTO) this.transitionDuration = 1.2;
+                else if (newState === STATES.BOOK_CLOSED) this.transitionDuration = 1.8;
+
+                if (this.handlers[this.targetState]?.onEnter) {
+                    this.handlers[this.targetState].onEnter();
+                }
+
+                this.updateUI();
+            },
+
+            updateUI() {
+                fsmButtons.forEach(btn => {
+                    const s = parseInt(btn.getAttribute('data-state'));
+                    if (s === this.targetState) btn.classList.add('active');
+                    else btn.classList.remove('active');
+                });
+
+                const messages = {
+                    [STATES.BOOK_CLOSED]: "TRẠNG THÁI 1: SÁCH ĐÓNG · NẮM TAY (FIST) ĐỂ THU HỒI ALBUM",
+                    [STATES.BOOK_OPENING]: "TRẠNG THÁI 2: MỞ ĐỐI XỨNG 170° · XÒE TAY (OPEN HAND) ĐỂ BUNG GALAXY",
+                    [STATES.OPEN_HOLD]: "TRẠNG THÁI 2B: LÒNG SÁCH RỰC SÁNG · CHUẨN BỊ BÙNG NỔ HẠT",
+                    [STATES.PARTICLE_BURST]: "TRẠNG THÁI 3: BUNG TOÀN DIỆN · ẢNH & ĐỒ VẬT TÁCH BÌA BAY LƠ LỬNG",
+                    [STATES.SCATTER_GALAXY]: "TRẠNG THÁI 4: TINH CẦU 360° · CHỤM NGÓN (PINCH) VÀO ẢNH ĐỂ XEM",
+                    [STATES.FOCUS_PHOTO]: `TRẠNG THÁI 5: XEM ẢNH #${selectedPhotoIndex + 1} · VUỐT LÊN/XUỐNG ĐỔI ẢNH`
+                };
+                choreoPill.textContent = messages[this.targetState] || "";
+            },
+
+            handlers: {
+                [STATES.BOOK_CLOSED]: {},
+                [STATES.BOOK_OPENING]: {
+                    update(dt) {
+                        if (FSM.stateProgress >= 1.0) FSM.setTarget(STATES.OPEN_HOLD);
+                    }
+                },
+                [STATES.OPEN_HOLD]: {
+                    onEnter() { FSM.vibrateIntensity = 1.0; },
+                    update(dt) {
+                        if (FSM.stateProgress >= 1.0) FSM.setTarget(STATES.PARTICLE_BURST);
+                    }
+                },
+                [STATES.PARTICLE_BURST]: {
+                    onEnter() { FSM.vibrateIntensity = 0.0; },
+                    update(dt) {
+                        if (FSM.stateProgress >= 1.0) FSM.setTarget(STATES.SCATTER_GALAXY);
+                    }
+                },
+                [STATES.SCATTER_GALAXY]: {},
+                [STATES.FOCUS_PHOTO]: {}
+            },
+
+            update(dt) {
+                this.stateTime += dt;
+                this.stateProgress = Math.min(this.stateTime / this.transitionDuration, 1.0);
+
+                if (this.handlers[this.targetState]?.update) {
+                    this.handlers[this.targetState].update(dt);
+                }
+
+                if (this.stateProgress >= 1.0 && this.currentState !== this.targetState) {
+                    this.currentState = this.targetState;
+                }
+            }
+        };
+
+        function nextPhoto() {
+            selectedPhotoIndex = (selectedPhotoIndex + 1) % TOTAL_PHOTO_COUNT;
+            FSM.updateUI();
+        }
+
+        function prevPhoto() {
+            selectedPhotoIndex = (selectedPhotoIndex - 1 + TOTAL_PHOTO_COUNT) % TOTAL_PHOTO_COUNT;
+            FSM.updateUI();
+        }
+
+        async function bootstrap() {
+            try {
+                await document.fonts.load('700 80px "Fredoka"');
+                await document.fonts.load('700 40px "Montserrat"');
+                await document.fonts.ready;
+            } catch (e) {}
+
+            initScene();
+            buildVibrantNebulaGalaxySky();
+            setupStudioLighting();
+            buildPhysicallyAccurateBook();
+            buildOptimizedParticleSystem();
+            buildProportionalStarsAndHearts();
+            buildSeamlessQuadCoverPhotos();
+            buildMedicalAndScienceChibiProps();
+            buildCrossStarFlares();
+            setupInteractions();
+
+            const loader = document.getElementById('loading-screen');
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.remove(), 400);
+            }
+
+            animate();
+        }
+
+        window.addEventListener('DOMContentLoaded', bootstrap);
+
+        function initScene() {
+            const container = document.getElementById('canvas-container');
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x02030a);
+            scene.fog = new THREE.FogExp2(0x03040e, 0.006);
+
+            camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 500);
+            camera.position.set(0, 3.2, 17.0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.35;
+            container.appendChild(renderer.domElement);
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.target.set(0, 0, 0);
+            controls.minDistance = 2.0;
+            controls.maxDistance = 75.0;
+
+            composer = new EffectComposer(renderer);
+            composer.addPass(new RenderPass(scene, camera));
+
+            const bloomPass = new UnrealBloomPass(
+                new THREE.Vector2(window.innerWidth, window.innerHeight),
+                0.85,
+                0.5,
+                0.72
+            );
+            composer.addPass(bloomPass);
+            composer.addPass(new OutputPass());
+        }
+
+        function buildVibrantNebulaGalaxySky() {
+            const cvs = document.createElement('canvas');
+            cvs.width = 1024; cvs.height = 512;
+            const ctx = cvs.getContext('2d');
+
+            const baseGrad = ctx.createRadialGradient(512, 256, 50, 512, 256, 550);
+            baseGrad.addColorStop(0, '#16082c');
+            baseGrad.addColorStop(0.5, '#070314');
+            baseGrad.addColorStop(1, '#010206');
+            ctx.fillStyle = baseGrad;
+            ctx.fillRect(0, 0, 1024, 512);
+
+            function drawNebulaCloud(cx, cy, rx, ry, col1, col2) {
+                ctx.save();
+                ctx.translate(cx, cy);
+                const g = ctx.createRadialGradient(0, 0, 10, 0, 0, rx);
+                g.addColorStop(0, col1);
+                g.addColorStop(0.45, col2);
+                g.addColorStop(1, 'transparent');
+                ctx.fillStyle = g;
+                ctx.scale(1.0, ry / rx);
+                ctx.beginPath();
+                ctx.arc(0, 0, rx, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            drawNebulaCloud(250, 160, 250, 150, 'rgba(255, 45, 141, 0.5)', 'rgba(0, 242, 254, 0.25)');
+            drawNebulaCloud(800, 350, 275, 160, 'rgba(168, 85, 247, 0.5)', 'rgba(255, 45, 141, 0.25)');
+            drawNebulaCloud(512, 225, 220, 130, 'rgba(255, 215, 0, 0.4)', 'rgba(0, 255, 102, 0.2)');
+
+            for (let i = 0; i < 2000; i++) {
+                const sx = Math.random() * 1024;
+                const sy = Math.random() * 512;
+                const sr = Math.random() * 1.8;
+                const sa = 0.4 + Math.random() * 0.6;
+                ctx.fillStyle = (Math.random() > 0.3) ? `rgba(255, 255, 255, ${sa})` : `rgba(255, 128, 191, ${sa})`;
+                ctx.beginPath();
+                ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            const skyTex = new THREE.CanvasTexture(cvs);
+            skyTex.mapping = THREE.EquirectangularReflectionMapping;
+            skyTex.colorSpace = THREE.SRGBColorSpace;
+            scene.background = skyTex;
+            scene.environment = skyTex;
+        }
+
+        function setupStudioLighting() {
+            scene.add(new THREE.AmbientLight(0xffffff, 0.95));
+
+            const coreCyanLight = new THREE.PointLight(0x00f2fe, 4.0, 28);
+            coreCyanLight.position.set(0, 1.2, 2.0);
+            scene.add(coreCyanLight);
+
+            innerSparksLight = new THREE.PointLight(0xbdf8ff, 0.0, 22);
+            innerSparksLight.position.set(0, 0.6, 0.8);
+            scene.add(innerSparksLight);
+
+            const rimCyan = new THREE.DirectionalLight(0x00f2fe, 3.2);
+            rimCyan.position.set(-12, 9, -7);
+            scene.add(rimCyan);
+
+            const rimPink = new THREE.DirectionalLight(0xff2d8d, 3.4);
+            rimPink.position.set(12, -7, -7);
+            scene.add(rimPink);
+
+            const keyFront = new THREE.DirectionalLight(0xfffaed, 2.6);
+            keyFront.position.set(0, 8, 14);
+            scene.add(keyFront);
+        }
+
+        function createBlackGalaxyAnimeMasterTitle() {
+            const cvs = document.createElement('canvas');
+            cvs.width = 1024; cvs.height = 1024;
+            const ctx = cvs.getContext('2d');
+            ctx.clearRect(0, 0, 1024, 1024);
+
+            ctx.save();
+            ctx.translate(512, 512);
+            ctx.rotate(-14 * Math.PI / 180);
+
+            ctx.font = '700 92px "Fredoka", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+
+            // VIỀN TRẮNG ĐẬM GẤP 3 LẦN
+            ctx.shadowColor = 'rgba(0, 242, 254, 0.8)';
+            ctx.shadowBlur = 20;
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 24;
+            ctx.strokeText('MEMORYZONE', 0, -42);
+            ctx.font = '700 108px "Fredoka", sans-serif';
+            ctx.strokeText('2 1 8', 0, 65);
+
+            ctx.shadowColor = 'transparent';
+            ctx.strokeStyle = '#00f2fe';
+            ctx.lineWidth = 4;
+            ctx.strokeText('2 1 8', 0, 65);
+            ctx.font = '700 92px "Fredoka", sans-serif';
+            ctx.strokeText('MEMORYZONE', 0, -42);
+
+            const blackGalaxyGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, 250);
+            blackGalaxyGrad.addColorStop(0.0, '#101726');
+            blackGalaxyGrad.addColorStop(0.5, '#070b14');
+            blackGalaxyGrad.addColorStop(1.0, '#010308');
+
+            ctx.fillStyle = blackGalaxyGrad;
+            ctx.font = '700 92px "Fredoka", sans-serif';
+            ctx.fillText('MEMORYZONE', 0, -42);
+
+            ctx.font = '700 108px "Fredoka", sans-serif';
+            ctx.fillText('2 1 8', 0, 65);
+
+            for (let i = 0; i < 40; i++) {
+                const gx = (Math.random() - 0.5) * 440;
+                const gy = (Math.random() - 0.5) * 220;
+                ctx.fillStyle = Math.random() > 0.5 ? '#ffffff' : (Math.random() > 0.5 ? '#00f2fe' : '#ff80bf');
+                ctx.beginPath();
+                ctx.arc(gx, gy, 1.5 + Math.random() * 2.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.restore();
+
+            const tex = new THREE.CanvasTexture(cvs);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            tex.needsUpdate = true;
+
+            const geo = new THREE.PlaneGeometry(4.4, 4.4);
+            const mat = new THREE.MeshStandardMaterial({
+                map: tex,
+                transparent: true,
+                metalness: 0.9,
+                roughness: 0.15,
+                emissive: 0x00f2fe,
+                emissiveIntensity: 0.42,
+                depthWrite: false
+            });
+
+            return new THREE.Mesh(geo, mat);
+        }
+
+        function createChibiContourBorder(w, h) {
+            const off = 0.05;
+            const pts = [
+                new THREE.Vector3(off, -h / 2 + off, 0),
+                new THREE.Vector3(w - off, -h / 2 + off, 0),
+                new THREE.Vector3(w - off, h / 2 - off, 0),
+                new THREE.Vector3(off, h / 2 - off, 0),
+                new THREE.Vector3(off, -h / 2 + off, 0)
+            ];
+            const geo = new THREE.BufferGeometry().setFromPoints(pts);
+            return new THREE.Line(geo, new THREE.LineBasicMaterial({
+                color: 0x00f2fe,
+                transparent: true,
+                opacity: 0.95
+            }));
+        }
+
+        function createCoverExtrusion(w, h, depth, bevel) {
+            const shape = new THREE.Shape();
+            const r = 0.22;
+            shape.moveTo(0, -h / 2);
+            shape.lineTo(w - r, -h / 2);
+            shape.quadraticCurveTo(w, -h / 2, w, -h / 2 + r);
+            shape.lineTo(w, h / 2 - r);
+            shape.quadraticCurveTo(w, h / 2, w - r, h / 2);
+            shape.lineTo(0, h / 2);
+            shape.lineTo(0, -h / 2);
+
+            return new THREE.ExtrudeGeometry(shape, {
+                depth: depth,
+                bevelEnabled: true,
+                bevelSegments: 2,
+                steps: 1,
+                bevelSize: bevel,
+                bevelThickness: bevel
             });
         }
 
-        // Tiến trình nạp file
-        loader.load('models/building.glb', (gltf) => {
-            createParticlesFromMesh(gltf, BUILDING_SCALE, 0x00ffff, true, 0); // Kính Cyan, dầm Vàng
-            
-            loader.load('models/people.glb', (gltfPeople) => {
-                createParticlesFromMesh(gltfPeople, PEOPLE_SCALE, 0xffffff, false, 8); // Người trắng, đẩy ra phía trước 8 đơn vị
-                document.getElementById('loading').style.display = 'none';
-            }, undefined, () => alert("Không tìm thấy file models/people.glb"));
+        function createCyanWhiteMarbleCoverTexture() {
+            const cvs = document.createElement('canvas');
+            cvs.width = 512; cvs.height = 512;
+            const ctx = cvs.getContext('2d');
 
-        }, undefined, () => {
-            document.getElementById('loading').innerText = "LỖI: Không tìm thấy file models/building.glb";
-        });
+            const baseGrad = ctx.createLinearGradient(0, 0, 512, 512);
+            baseGrad.addColorStop(0.0, '#00b7d9');
+            baseGrad.addColorStop(0.35, '#00e5ff');
+            baseGrad.addColorStop(0.7, '#008ba8');
+            baseGrad.addColorStop(1.0, '#005f73');
+            ctx.fillStyle = baseGrad;
+            ctx.fillRect(0, 0, 512, 512);
 
-        // Tạo vòng quỹ đạo ánh sáng (Light Trails)
-        const rings = [];
-        const ringGeo = new THREE.TorusGeometry(10, 0.02, 8, 150);
-        const matCyan = new THREE.PointsMaterial({ color: 0x00ffff, size: 0.05, blending: THREE.AdditiveBlending });
-        const matGold = new THREE.PointsMaterial({ color: 0xffd700, size: 0.05, blending: THREE.AdditiveBlending });
+            const marblePoints = [
+                { x: 150, y: 110, r: 160, a: 0.55 },
+                { x: 375, y: 175, r: 190, a: 0.45 },
+                { x: 225, y: 350, r: 200, a: 0.60 },
+                { x: 410, y: 410, r: 170, a: 0.40 }
+            ];
 
-        for(let i=0; i<3; i++) {
-            const pts = new THREE.Points(ringGeo, i % 2 === 0 ? matCyan : matGold);
-            pts.rotation.x = Math.PI / 2 + (Math.random() - 0.5) * 0.5;
-            pts.position.y = 2 + i * 2;
-            pts.scale.setScalar(1 + i * 0.2);
-            mainGroup.add(pts);
-            rings.push({ mesh: pts, speed: (Math.random() - 0.5) * 2 });
+            marblePoints.forEach(p => {
+                const g = ctx.createRadialGradient(p.x, p.y, 10, p.x, p.y, p.r);
+                g.addColorStop(0.0, `rgba(255, 255, 255, ${p.a})`);
+                g.addColorStop(0.45, `rgba(225, 253, 255, ${p.a * 0.55})`);
+                g.addColorStop(0.85, 'rgba(0, 242, 254, 0.15)');
+                g.addColorStop(1.0, 'transparent');
+                ctx.fillStyle = g;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            const tex = new THREE.CanvasTexture(cvs);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            tex.needsUpdate = true;
+            return tex;
         }
 
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+        function buildPhysicallyAccurateBook() {
+            albumRoot = new THREE.Group();
+            albumRoot.position.set(0, 0, 0);
+            albumRoot.rotation.set(0.18, 0.0, 0);
+            scene.add(albumRoot);
+
+            const W = BOOK.width;
+            const H = BOOK.height;
+            const T = BOOK.thickness;
+            const S = BOOK.spineThickness;
+            const R = S / 2;
+
+            const coverTexture = createCyanWhiteMarbleCoverTexture();
+
+            chibiCoverMat = new THREE.MeshPhysicalMaterial({
+                map: coverTexture,
+                color: 0xffffff,
+                metalness: 0.35,
+                roughness: 0.12,
+                clearcoat: 1.0,
+                clearcoatRoughness: 0.03,
+                reflectivity: 0.98,
+                emissive: 0x00f2fe,
+                emissiveIntensity: 0.18,
+                transparent: true,
+                opacity: 1.0
+            });
+
+            const spineGeo = new THREE.CylinderGeometry(R, R, H + BOOK.bevel * 2, 24, 1, false, Math.PI / 2, Math.PI);
+            spineGeo.center();
+            spineMesh = new THREE.Mesh(spineGeo, chibiCoverMat);
+            spineMesh.rotation.y = Math.PI;
+            albumRoot.add(spineMesh);
+
+            leftCoverHinge = new THREE.Group();
+            leftCoverHinge.position.set(0, 0, -R);
+            albumRoot.add(leftCoverHinge);
+
+            const leftGeo = createCoverExtrusion(W, H, T, BOOK.bevel);
+            const leftMesh = new THREE.Mesh(leftGeo, chibiCoverMat);
+            leftMesh.position.set(0, 0, -T);
+            leftCoverHinge.add(leftMesh);
+
+            rightCoverHinge = new THREE.Group();
+            rightCoverHinge.position.set(0, 0, R);
+            albumRoot.add(rightCoverHinge);
+
+            const rightGeo = createCoverExtrusion(W, H, T, BOOK.bevel);
+            const rightMesh = new THREE.Mesh(rightGeo, chibiCoverMat);
+            rightMesh.position.set(0, 0, 0);
+            rightCoverHinge.add(rightMesh);
+
+            contourLineMesh = createChibiContourBorder(W, H);
+            contourLineMesh.position.set(0, 0, T + BOOK.bevel + 0.003);
+            rightCoverHinge.add(contourLineMesh);
+
+            titleMesh = createBlackGalaxyAnimeMasterTitle();
+            titleMesh.position.set(W * 0.50, 0.0, T + BOOK.bevel + 0.008);
+            rightCoverHinge.add(titleMesh);
+        }
+
+        function buildOptimizedParticleSystem() {
+            const count = TOTAL_BUFFER_PARTICLES;
+            pBookPos = new Float32Array(count * 3);
+            pOpenedPos = new Float32Array(count * 3);
+            pBurstDir = new Float32Array(count * 3);
+            pGalaxyPos = new Float32Array(count * 3);
+            pColors = new Float32Array(count * 3);
+            pSizesClosed = new Float32Array(count);
+            pSizesGalaxy = new Float32Array(count);
+            pPhases = new Float32Array(count);
+            pPageFlags = new Float32Array(count);
+            pArchParams = new Float32Array(count);
+            pIsExtra = new Float32Array(count);
+
+            const W = BOOK.width;
+            const H = BOOK.height;
+            const T = BOOK.thickness;
+            const R = BOOK.spineThickness / 2;
+            const openRadHalf = BOOK.maxOpenRad / 2;
+
+            const exactPagesPalette = [
+                new THREE.Color(0xF5FCFF),
+                new THREE.Color(0x8BE9FF),
+                new THREE.Color(0xB79CFF),
+                new THREE.Color(0xFF9DCC),
+                new THREE.Color(0xFF4FD8),
+                new THREE.Color(0xFFD98A)
+            ];
+
+            const rainbowGalaxyPalette = [
+                new THREE.Color(0x00f2fe),
+                new THREE.Color(0xff2d8d),
+                new THREE.Color(0xffd700),
+                new THREE.Color(0xa855f7),
+                new THREE.Color(0x00ff66),
+                new THREE.Color(0xff6b4a),
+                new THREE.Color(0xff80bf),
+                new THREE.Color(0xffffff)
+            ];
+
+            const cCyan = new THREE.Color(0x00f2fe);
+            const cWhite = new THREE.Color(0xffffff);
+
+            for (let i = 0; i < count; i++) {
+                pPhases[i] = Math.random() * Math.PI * 2;
+                const isExtra = (i >= GALAXY_PARTICLES) ? 1.0 : 0.0;
+                pIsExtra[i] = isExtra;
+
+                let bx = 0, by = 0, bz = 0;
+                let ox = 0, oy = 0, oz = 0;
+                let col = cWhite.clone();
+                let szClosed = 0.024;
+                let szGalaxy = 0.32 + Math.random() * 0.28;
+                let isPage = 0.0;
+                let archParam = 0.0;
+
+                if (isExtra > 0.5 || (i < GALAXY_PARTICLES * 0.70)) {
+                    isPage = 1.0;
+                    const pageIndex = i % BOOK.pageCount;
+                    const pageRatio = (pageIndex + 1) / (BOOK.pageCount + 1);
+
+                    const u = 0.12 + Math.random() * (W - 0.28);
+                    const v = (Math.random() - 0.5) * (H - 0.35);
+                    const zSlot = THREE.MathUtils.lerp(-R + 0.035, R - 0.035, pageRatio);
+
+                    bx = u; by = v; bz = zSlot;
+
+                    const pageAng = THREE.MathUtils.lerp(-openRadHalf, openRadHalf, pageRatio);
+                    ox = u * Math.cos(pageAng);
+                    oy = v;
+                    oz = zSlot + u * Math.sin(pageAng);
+
+                    archParam = 0.35 * Math.sin(pageRatio * Math.PI);
+
+                    if (isExtra > 0.5) {
+                        col = exactPagesPalette[pageIndex].clone();
+                        if (Math.random() > 0.88) col.lerp(cWhite, 0.35);
+                    } else {
+                        col = rainbowGalaxyPalette[i % rainbowGalaxyPalette.length].clone();
+                    }
+
+                    szClosed = 0.024;
+                } else {
+                    const sub = i / (GALAXY_PARTICLES * 0.30);
+                    if (sub < 0.45) {
+                        const u = Math.random() * W;
+                        const v = (Math.random() - 0.5) * H;
+                        bx = u; by = v; bz = -R - T;
+                        ox = u * Math.cos(openRadHalf);
+                        oy = v;
+                        oz = -R - u * Math.sin(openRadHalf);
+                        col = cCyan.clone().lerp(cWhite, Math.random() * 0.5);
+                    } else if (sub < 0.90) {
+                        const u = Math.random() * W;
+                        const v = (Math.random() - 0.5) * H;
+                        bx = u; by = v; bz = R + T;
+                        ox = u * Math.cos(-openRadHalf);
+                        oy = v;
+                        oz = R + u * Math.sin(-openRadHalf);
+                        col = cCyan.clone().lerp(new THREE.Color(0xff2d8d), Math.random() * 0.4);
+                    } else {
+                        const theta = (Math.random() - 0.5) * Math.PI;
+                        bx = -R * Math.cos(theta);
+                        by = (Math.random() - 0.5) * H;
+                        bz = R * Math.sin(theta);
+                        ox = bx; oy = by; oz = bz;
+                        col = cCyan.clone();
+                    }
+                    szClosed = 0.055;
+                }
+
+                pBookPos[i * 3] = bx;
+                pBookPos[i * 3 + 1] = by;
+                pBookPos[i * 3 + 2] = bz;
+
+                pOpenedPos[i * 3] = ox;
+                pOpenedPos[i * 3 + 1] = oy;
+                pOpenedPos[i * 3 + 2] = oz;
+
+                pPageFlags[i] = isPage;
+                pArchParams[i] = archParam;
+
+                const bDir = new THREE.Vector3(
+                    ox + (Math.random() - 0.5) * 5.5,
+                    oy + (Math.random() - 0.5) * 5.5,
+                    oz + (Math.random() - 0.5) * 5.5
+                ).normalize();
+                pBurstDir[i * 3] = bDir.x;
+                pBurstDir[i * 3 + 1] = bDir.y;
+                pBurstDir[i * 3 + 2] = bDir.z;
+
+                const sR = 2.4 + Math.pow(Math.random(), 0.58) * 14.5;
+                const sTheta = Math.random() * Math.PI * 2;
+                const sPhi = Math.acos(2 * Math.random() - 1);
+
+                pGalaxyPos[i * 3] = sR * Math.sin(sPhi) * Math.cos(sTheta);
+                pGalaxyPos[i * 3 + 1] = sR * Math.sin(sPhi) * Math.sin(sTheta) * 0.92;
+                pGalaxyPos[i * 3 + 2] = sR * Math.cos(sPhi);
+
+                pColors[i * 3] = col.r;
+                pColors[i * 3 + 1] = col.g;
+                pColors[i * 3 + 2] = col.b;
+
+                pSizesClosed[i] = szClosed;
+                pSizesGalaxy[i] = szGalaxy;
+            }
+
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.BufferAttribute(pBookPos, 3));
+            geo.setAttribute('openedPosition', new THREE.BufferAttribute(pOpenedPos, 3));
+            geo.setAttribute('burstDirection', new THREE.BufferAttribute(pBurstDir, 3));
+            geo.setAttribute('galaxyPosition', new THREE.BufferAttribute(pGalaxyPos, 3));
+            geo.setAttribute('color', new THREE.BufferAttribute(pColors, 3));
+            geo.setAttribute('sizeClosed', new THREE.BufferAttribute(pSizesClosed, 1));
+            geo.setAttribute('sizeGalaxy', new THREE.BufferAttribute(pSizesGalaxy, 1));
+            geo.setAttribute('phase', new THREE.BufferAttribute(pPhases, 1));
+            geo.setAttribute('pageFlag', new THREE.BufferAttribute(pPageFlags, 1));
+            geo.setAttribute('archParam', new THREE.BufferAttribute(pArchParams, 1));
+            geo.setAttribute('isExtra', new THREE.BufferAttribute(pIsExtra, 1));
+
+            morphShaderMat = new THREE.ShaderMaterial({
+                vertexShader: `
+                    attribute vec3 openedPosition;
+                    attribute vec3 burstDirection;
+                    attribute vec3 galaxyPosition;
+                    attribute vec3 color;
+                    attribute float sizeClosed;
+                    attribute float sizeGalaxy;
+                    attribute float phase;
+                    attribute float pageFlag;
+                    attribute float archParam;
+                    attribute float isExtra;
+
+                    uniform float uOpenRatio;
+                    uniform float uBurstRatio;
+                    uniform float uGalaxyRatio;
+                    uniform float uTime;
+                    uniform float uVibrate;
+                    uniform float uGalaxyRot;
+                    uniform float uFocusDim;
+
+                    varying vec3 vColor;
+                    varying float vAlpha;
+
+                    void main() {
+                        vColor = color;
+
+                        vec3 curP = mix(position, openedPosition, uOpenRatio);
+                        if (pageFlag > 0.5) {
+                            float curve = sin(uOpenRatio * 3.14159265) * archParam * sin((curP.x / 4.35) * 3.14159265);
+                            curP.z -= curve;
+                        }
+
+                        if (uVibrate > 0.01) {
+                            curP += burstDirection * sin(uTime * 48.0 + phase * 10.0) * 0.06 * uVibrate;
+                        }
+
+                        float burstDist = (7.5 + sin(phase * 4.0) * 4.5) * uBurstRatio;
+                        vec3 burstP = curP + burstDirection * burstDist;
+
+                        float c = cos(uGalaxyRot);
+                        float s = sin(uGalaxyRot);
+                        vec3 rotGalaxy = vec3(
+                            galaxyPosition.x * c - galaxyPosition.z * s,
+                            galaxyPosition.y,
+                            galaxyPosition.x * s + galaxyPosition.z * c
+                        );
+
+                        vec3 finalP = mix(burstP, rotGalaxy, uGalaxyRatio);
+                        vec4 mvPos = modelViewMatrix * vec4(finalP, 1.0);
+                        gl_Position = projectionMatrix * mvPos;
+
+                        float curSize = mix(sizeClosed, sizeGalaxy, uGalaxyRatio);
+                        float pulse = 1.0 + 0.32 * sin(uTime * 3.5 + phase * 6.28);
+                        gl_PointSize = curSize * pulse * (300.0 / -mvPos.z);
+
+                        float extraAlpha = (1.0 - smoothstep(0.0, 0.45, uBurstRatio)) * (1.0 - uGalaxyRatio);
+                        float baseAlpha = 0.82 + 0.18 * uGalaxyRatio;
+                        vAlpha = mix(baseAlpha, extraAlpha * 0.95, isExtra) * uFocusDim;
+                    }
+                `,
+                fragmentShader: `
+                    varying vec3 vColor;
+                    varying float vAlpha;
+
+                    void main() {
+                        float dist = length(gl_PointCoord - vec2(0.5));
+                        if (dist > 0.5) discard;
+                        float glow = 1.0 - smoothstep(0.18, 0.5, dist);
+                        gl_FragColor = vec4(vColor, glow * vAlpha);
+                    }
+                `,
+                uniforms: {
+                    uOpenRatio: { value: 0.0 },
+                    uBurstRatio: { value: 0.0 },
+                    uGalaxyRatio: { value: 0.0 },
+                    uTime: { value: 0.0 },
+                    uVibrate: { value: 0.0 },
+                    uGalaxyRot: { value: 0.0 },
+                    uFocusDim: { value: 1.0 }
+                },
+                transparent: true,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            });
+
+            masterParticleMesh = new THREE.Points(geo, morphShaderMat);
+            albumRoot.add(masterParticleMesh);
+        }
+
+        function createParametricStarGeometry(spikes, outerR, innerR, depth = 0.09) {
+            const shape = new THREE.Shape();
+            const total = spikes * 2;
+            for (let i = 0; i < total; i++) {
+                const r = (i % 2 === 0) ? outerR : innerR;
+                const a = (i / total) * Math.PI * 2 - Math.PI / 2;
+                const x = Math.cos(a) * r;
+                const y = Math.sin(a) * r;
+                if (i === 0) shape.moveTo(x, y);
+                else shape.lineTo(x, y);
+            }
+            shape.closePath();
+
+            const geo = new THREE.ExtrudeGeometry(shape, {
+                depth: depth,
+                bevelEnabled: true,
+                bevelSegments: 1,
+                steps: 1,
+                bevelSize: 0.04,
+                bevelThickness: 0.05
+            });
+            geo.center();
+            return geo;
+        }
+
+        function createDiamondHeartGeometry() {
+            const geo = new THREE.BufferGeometry();
+            const vertices = new Float32Array([
+                0, 0.1, 0.45,
+                0, 0.45, 0.15,
+                0.55, 0.85, 0.12,
+                0.95, 0.4, 0.1,
+                0.55, -0.2, 0.1,
+                0, -0.95, 0.12,
+                -0.55, -0.2, 0.1,
+                -0.95, 0.4, 0.1,
+                -0.55, 0.85, 0.12,
+                0, 0.1, -0.45
+            ]);
+            const indices = [
+                0, 1, 2,  0, 2, 3,  0, 3, 4,  0, 4, 5,
+                0, 5, 6,  0, 6, 7,  0, 7, 8,  0, 8, 1,
+                9, 2, 1,  9, 3, 2,  9, 4, 3,  9, 5, 4,
+                9, 6, 5,  9, 7, 6,  9, 8, 7,  9, 1, 8
+            ];
+            geo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+            geo.setIndex(indices);
+            geo.computeVertexNormals();
+            return geo;
+        }
+
+        function buildProportionalStarsAndHearts() {
+            const iridescentRubyMat = new THREE.MeshPhysicalMaterial({
+                color: 0xfff0f6, metalness: 0.06, roughness: 0.02, transmission: 0.98, ior: 2.35,
+                thickness: 2.2, clearcoat: 1.0, clearcoatRoughness: 0.02, iridescence: 1.0, iridescenceIOR: 1.6,
+                iridescenceThicknessRange: [120, 450], attenuationColor: new THREE.Color(0xff2d8d), attenuationDistance: 1.8,
+                flatShading: true, side: THREE.DoubleSide
+            });
+
+            const iridescentPinkMat = new THREE.MeshPhysicalMaterial({
+                color: 0xfff5fb, metalness: 0.08, roughness: 0.02, transmission: 0.98, ior: 2.30,
+                thickness: 2.0, clearcoat: 1.0, clearcoatRoughness: 0.02, iridescence: 1.0, iridescenceIOR: 1.6,
+                iridescenceThicknessRange: [150, 480], attenuationColor: new THREE.Color(0xff80bf), attenuationDistance: 1.8,
+                flatShading: true, side: THREE.DoubleSide
+            });
+
+            const iridescentCyanMat = new THREE.MeshPhysicalMaterial({
+                color: 0xf0fbff, metalness: 0.05, roughness: 0.02, transmission: 0.99, ior: 2.40,
+                thickness: 2.4, clearcoat: 1.0, clearcoatRoughness: 0.02, iridescence: 1.0, iridescenceIOR: 1.6,
+                iridescenceThicknessRange: [100, 420], attenuationColor: new THREE.Color(0x00f2fe), attenuationDistance: 2.0,
+                flatShading: true, side: THREE.DoubleSide
+            });
+
+            const heartGeo = createDiamondHeartGeometry();
+            for (let i = 0; i < 3; i++) {
+                const mesh = new THREE.Mesh(heartGeo, (i % 2 === 0) ? iridescentRubyMat : iridescentPinkMat);
+                mesh.scale.setScalar(1.65);
+                scene.add(mesh);
+                heroGiantHearts.push({
+                    mesh,
+                    baseRad: 7.5 + i * 2.2,
+                    angle: (i / 3) * Math.PI * 2,
+                    speed: 0.05 * (i % 2 === 0 ? 1 : -1),
+                    inclination: (i - 1) * 0.45
+                });
+            }
+
+            const star3Geo = createParametricStarGeometry(3, 0.46, 0.15);
+            for (let i = 0; i < 25; i++) {
+                const mesh = new THREE.Mesh(star3Geo, iridescentCyanMat);
+                mesh.scale.setScalar(0.78 + Math.random() * 0.35);
+                scene.add(mesh);
+                stars3Point.push({
+                    mesh,
+                    rad: 4.5 + Math.random() * 9.5,
+                    theta: Math.random() * Math.PI * 2,
+                    phi: Math.acos(2 * Math.random() - 1),
+                    speed: 0.08 + Math.random() * 0.06,
+                    rotSpeedX: 0.6 + Math.random() * 0.8,
+                    rotSpeedY: 0.8 + Math.random() * 0.8,
+                    pulsePhase: Math.random() * Math.PI * 2
+                });
+            }
+
+            const star4Geo = createParametricStarGeometry(4, 0.45, 0.14);
+            for (let i = 0; i < 25; i++) {
+                const mesh = new THREE.Mesh(star4Geo, iridescentPinkMat);
+                mesh.scale.setScalar(0.72 + Math.random() * 0.35);
+                scene.add(mesh);
+                stars4Point.push({
+                    mesh,
+                    rad: 5.0 + Math.random() * 10.0,
+                    theta: Math.random() * Math.PI * 2,
+                    phi: Math.acos(2 * Math.random() - 1),
+                    speed: -0.07 - Math.random() * 0.06,
+                    rotSpeedX: 0.7 + Math.random() * 0.7,
+                    rotSpeedY: 0.9 + Math.random() * 0.7,
+                    pulsePhase: Math.random() * Math.PI * 2
+                });
+            }
+
+            const star5Geo = createParametricStarGeometry(5, 0.42, 0.16);
+            for (let i = 0; i < 25; i++) {
+                const mesh = new THREE.Mesh(star5Geo, iridescentRubyMat);
+                mesh.scale.setScalar(0.70 + Math.random() * 0.35);
+                scene.add(mesh);
+                stars5Point.push({
+                    mesh,
+                    rad: 5.5 + Math.random() * 10.5,
+                    theta: Math.random() * Math.PI * 2,
+                    phi: Math.acos(2 * Math.random() - 1),
+                    speed: 0.06 + Math.random() * 0.07,
+                    rotSpeedX: 0.8 + Math.random() * 0.8,
+                    rotSpeedY: 1.0 + Math.random() * 0.8,
+                    pulsePhase: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        function buildCrossStarFlares() {
+            const cvs = document.createElement('canvas');
+            cvs.width = 128; cvs.height = 128;
+            const ctx = cvs.getContext('2d');
+
+            const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            g.addColorStop(0, '#ffffff');
+            g.addColorStop(0.18, 'rgba(255, 240, 160, 0.98)');
+            g.addColorStop(0.5, 'rgba(0, 242, 254, 0.35)');
+            g.addColorStop(1, 'transparent');
+            ctx.fillStyle = g;
+            ctx.fillRect(0, 0, 128, 128);
+
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(64, 5); ctx.lineTo(64, 123); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(5, 64); ctx.lineTo(123, 64); ctx.stroke();
+
+            const tex = new THREE.CanvasTexture(cvs);
+
+            const count = FLARE_COUNT;
+            const pos = new Float32Array(count * 3);
+            const sizes = new Float32Array(count);
+            const phases = new Float32Array(count);
+
+            for (let i = 0; i < count; i++) {
+                const r = 3.5 + Math.random() * 18.0;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+
+                pos[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+                pos[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta) * 0.92;
+                pos[i * 3 + 2] = r * Math.cos(phi);
+
+                sizes[i] = 1.3 + Math.random() * 1.8;
+                phases[i] = Math.random() * 20.0;
+            }
+
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+            geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+            geo.setAttribute('phase', new THREE.BufferAttribute(phases, 1));
+
+            flareShaderMat = new THREE.ShaderMaterial({
+                vertexShader: `
+                    attribute float size;
+                    attribute float phase;
+                    uniform float uTime;
+                    uniform float uGalaxyRatio;
+                    uniform float uFocusDim;
+                    varying float vAlpha;
+
+                    void main() {
+                        float wave = sin(uTime * 4.0 + phase);
+                        float flash = pow(max(0.0, wave), 2.5);
+                        vAlpha = flash * uGalaxyRatio * uFocusDim;
+
+                        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+                        gl_Position = projectionMatrix * mv;
+                        gl_PointSize = size * (1.0 + 1.5 * flash) * (260.0 / -mv.z);
+                    }
+                `,
+                fragmentShader: `
+                    uniform sampler2D uTex;
+                    varying float vAlpha;
+                    void main() {
+                        vec4 col = texture2D(uTex, gl_PointCoord);
+                        gl_FragColor = vec4(col.rgb, col.a * vAlpha);
+                    }
+                `,
+                uniforms: {
+                    uTex: { value: tex },
+                    uTime: { value: 0.0 },
+                    uGalaxyRatio: { value: 0.0 },
+                    uFocusDim: { value: 1.0 }
+                },
+                transparent: true,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            });
+
+            crossFlareMesh = new THREE.Points(geo, flareShaderMat);
+            scene.add(crossFlareMesh);
+        }
+
+        function createFramelessPhotoTexture(index) {
+            const cvs = document.createElement('canvas');
+            cvs.width = 256; cvs.height = 340;
+            const ctx = cvs.getContext('2d');
+
+            const grad = ctx.createLinearGradient(0, 0, 256, 340);
+            const palettes = [
+                ['#002b36', '#00f2fe', '#d4fcff'],
+                ['#1e0538', '#ff2d8d', '#ff99cc'],
+                ['#022340', '#0099ff', '#66ccff'],
+                ['#023826', '#11998e', '#38ef7d'],
+                ['#38020f', '#ff416c', '#ff4b2b'],
+                ['#1a2a6c', '#b21f1f', '#fdbb2d'],
+                ['#2b5876', '#4e4376', '#a855f7'],
+                ['#000428', '#004e92', '#00f2fe'],
+                ['#833ab4', '#fd1d1d', '#fcb045'],
+                ['#c31432', '#240b36', '#ff2d8d'],
+                ['#4776e6', '#8e54e9', '#ff99cc'],
+                ['#0f2027', '#203a43', '#2c5364']
+            ];
+
+            const cols = palettes[index % palettes.length];
+            grad.addColorStop(0, cols[0]);
+            grad.addColorStop(0.5, cols[1]);
+            grad.addColorStop(1, cols[2]);
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 256, 340);
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+            ctx.beginPath();
+            ctx.arc(128, 150, 70, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '700 24px "Fredoka", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`KỶ NIỆM #${index + 1}`, 128, 145);
+
+            ctx.font = '600 12px "Montserrat", sans-serif';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            ctx.fillText("NIÊN KHÓA 2023 — 2026", 128, 170);
+
+            ctx.font = '700 14px "Montserrat", sans-serif';
+            ctx.fillStyle = '#ffffff';
+            const captions = [
+                "Lễ Khai Giảng 218", "Hội Trại Thanh Xuân", "Tiết Học Cuối Cùng", "Chuyến Đi Khó Quên",
+                "Áo Blouse Trắng", "Ống Nghe Y Đức", "Phòng Thí Nghiệm", "Lời Hứa Ban Mai",
+                "Năm Tháng Rực Rỡ", "Khoảnh Khắc Vô Giá", "Khát Vọng Bay Xa", "Mãi Mãi Bên Nhau"
+            ];
+            ctx.fillText(captions[index % captions.length], 128, 280);
+
+            ctx.font = '500 9px "Montserrat", sans-serif';
+            ctx.fillStyle = '#baf8ff';
+            ctx.fillText(index < 8 ? "COVER PHOTO (DEFAULT)" : "GALAXY FLOATING PHOTO", 128, 305);
+
+            const tex = new THREE.CanvasTexture(cvs);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            return tex;
+        }
+
+        function buildSeamlessQuadCoverPhotos() {
+            const photoGeo = new THREE.PlaneGeometry(1.10, 1.45);
+            const T = BOOK.thickness;
+            const bevel = BOOK.bevel;
+
+            const coverConfigs = [
+                { side: 'front', x: 1.25, y: 2.05, z: T + bevel + 0.002, rotZ: -0.10, rotY: 0 },
+                { side: 'front', x: 3.35, y: 2.05, z: T + bevel + 0.002, rotZ: 0.12, rotY: 0 },
+                { side: 'front', x: 1.25, y: -2.05, z: T + bevel + 0.002, rotZ: 0.08, rotY: 0 },
+                { side: 'front', x: 3.35, y: -2.05, z: T + bevel + 0.002, rotZ: -0.10, rotY: 0 },
+
+                { side: 'back', x: 1.25, y: 2.05, z: -T - bevel - 0.002, rotZ: -0.12, rotY: Math.PI },
+                { side: 'back', x: 3.35, y: 2.05, z: -T - bevel - 0.002, rotZ: 0.14, rotY: Math.PI },
+                { side: 'back', x: 1.25, y: -2.05, z: -T - bevel - 0.002, rotZ: 0.10, rotY: Math.PI },
+                { side: 'back', x: 3.35, y: -2.05, z: -T - bevel - 0.002, rotZ: -0.12, rotY: Math.PI }
+            ];
+
+            for (let i = 0; i < TOTAL_PHOTO_COUNT; i++) {
+                const tex = createFramelessPhotoTexture(i);
+                const mat = new THREE.MeshBasicMaterial({
+                    map: tex,
+                    transparent: true,
+                    side: THREE.DoubleSide
+                });
+
+                const mesh = new THREE.Mesh(photoGeo, mat);
+                const isCoverPhoto = (i < COVER_PHOTO_COUNT);
+
+                let anchor = null;
+                if (isCoverPhoto) {
+                    const cfg = coverConfigs[i];
+                    const hinge = (cfg.side === 'front') ? rightCoverHinge : leftCoverHinge;
+                    anchor = new THREE.Object3D();
+                    anchor.position.set(cfg.x, cfg.y, cfg.z);
+                    anchor.rotation.set(0, cfg.rotY, cfg.rotZ);
+                    hinge.add(anchor);
+                }
+
+                const theta = (i / TOTAL_PHOTO_COUNT) * Math.PI * 2;
+                const rGalaxy = 6.4 + (i % 3) * 1.5;
+                const phi = ((i % 5) - 2) * 0.32;
+
+                mesh.userData = {
+                    index: i,
+                    isPhoto: true,
+                    isCoverPhoto: isCoverPhoto,
+                    anchor: anchor,
+                    galaxyPos: new THREE.Vector3(rGalaxy * Math.cos(theta), phi * 3.6, rGalaxy * Math.sin(theta)),
+                    targetPos: new THREE.Vector3(),
+                    orbitAngle: theta,
+                    orbitRadius: rGalaxy,
+                    orbitSpeed: 0.08 + (i % 3) * 0.04
+                };
+
+                scene.add(mesh);
+                allPhotoCards.push(mesh);
+            }
+        }
+
+        function createChibiStethoscope() {
+            const group = new THREE.Group();
+            const metalMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9, roughness: 0.2 });
+            const tubeMat = new THREE.MeshStandardMaterial({ color: 0x00f2fe, roughness: 0.4 });
+            const chestMat = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.8, roughness: 0.2 });
+
+            const diaphragm = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.05, 16), metalMat);
+            diaphragm.rotation.x = Math.PI / 2;
+            group.add(diaphragm);
+
+            const innerDiaphragm = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.055, 16), chestMat);
+            innerDiaphragm.rotation.x = Math.PI / 2;
+            group.add(innerDiaphragm);
+
+            const uTube = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.035, 8, 16, Math.PI * 1.3), tubeMat);
+            uTube.position.set(0, 0.22, 0);
+            uTube.rotation.z = -Math.PI / 3;
+            group.add(uTube);
+
+            const earpieceArch = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.025, 8, 16, Math.PI), metalMat);
+            earpieceArch.position.set(0.1, 0.48, 0);
+            earpieceArch.rotation.z = Math.PI;
+            group.add(earpieceArch);
+
+            const tipL = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 8), tubeMat);
+            tipL.position.set(-0.08, 0.48, 0);
+            const tipR = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 8), tubeMat);
+            tipR.position.set(0.28, 0.48, 0);
+            group.add(tipL, tipR);
+
+            group.scale.setScalar(0.85);
+            return group;
+        }
+
+        function createChibiLabCoat() {
+            const group = new THREE.Group();
+            const coatMat = new THREE.MeshStandardMaterial({ color: 0xf4faff, roughness: 0.35 });
+            const collarMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 });
+            const pinkDetailMat = new THREE.MeshStandardMaterial({ color: 0xff2d8d, roughness: 0.3 });
+            const buttonMat = new THREE.MeshStandardMaterial({ color: 0x00f2fe, metalness: 0.5 });
+
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.62, 0.16), coatMat);
+            group.add(body);
+
+            const lapelL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.22, 0.04), collarMat);
+            lapelL.position.set(-0.12, 0.22, 0.09);
+            lapelL.rotation.z = 0.35;
+            const lapelR = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.22, 0.04), collarMat);
+            lapelR.position.set(0.12, 0.22, 0.09);
+            lapelR.rotation.z = -0.35;
+            group.add(lapelL, lapelR);
+
+            const pocket = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.14, 0.02), collarMat);
+            pocket.position.set(-0.14, 0.05, 0.09);
+            group.add(pocket);
+
+            const crossH = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.025, 0.025), pinkDetailMat);
+            crossH.position.set(-0.14, 0.05, 0.105);
+            const crossV = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.08, 0.025), pinkDetailMat);
+            crossV.position.set(-0.14, 0.05, 0.105);
+            group.add(crossH, crossV);
+
+            for (let i = 0; i < 3; i++) {
+                const btn = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.02, 8), buttonMat);
+                btn.rotation.x = Math.PI / 2;
+                btn.position.set(0, -0.05 - i * 0.12, 0.09);
+                group.add(btn);
+            }
+
+            const sleeveL = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.38, 8), coatMat);
+            sleeveL.position.set(-0.31, 0.1, 0);
+            sleeveL.rotation.z = 0.45;
+            const sleeveR = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 0.38, 8), coatMat);
+            sleeveR.position.set(0.31, 0.1, 0);
+            sleeveR.rotation.z = -0.45;
+            group.add(sleeveL, sleeveR);
+
+            group.scale.setScalar(0.85);
+            return group;
+        }
+
+        function createChibiTestTubeRack() {
+            const group = new THREE.Group();
+            const rackMat = new THREE.MeshStandardMaterial({ color: 0xe0f7fa, roughness: 0.4 });
+            const glassMat = new THREE.MeshPhysicalMaterial({
+                color: 0xffffff, transmission: 0.95, roughness: 0.05, ior: 1.5, thickness: 0.5
+            });
+            const corkMat = new THREE.MeshStandardMaterial({ color: 0xb57038, roughness: 0.8 });
+
+            const base = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.05, 0.22), rackMat);
+            base.position.y = -0.18;
+            const topBar = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.05, 0.22), rackMat);
+            topBar.position.y = 0.06;
+            const pillarL = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.26, 8), rackMat);
+            pillarL.position.set(-0.28, -0.06, 0);
+            const pillarR = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.26, 8), rackMat);
+            pillarR.position.set(0.28, -0.06, 0);
+            group.add(base, topBar, pillarL, pillarR);
+
+            const colors = [0x00f2fe, 0xff2d8d, 0x00ff66];
+            for (let i = 0; i < 3; i++) {
+                const tubeGroup = new THREE.Group();
+                tubeGroup.position.set(-0.18 + i * 0.18, 0, 0);
+
+                const glass = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.38, 12), glassMat);
+                const roundBottom = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 12), glassMat);
+                roundBottom.position.y = -0.19;
+
+                const liqMat = new THREE.MeshStandardMaterial({
+                    color: colors[i], emissive: colors[i], emissiveIntensity: 0.8, roughness: 0.1
+                });
+                const liquid = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.038, 0.22, 16), liqMat);
+                liquid.position.y = -0.08;
+
+                const cork = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.042, 0.06, 8), corkMat);
+                cork.position.y = 0.21;
+
+                tubeGroup.add(glass, roundBottom, liquid, cork);
+                group.add(tubeGroup);
+            }
+
+            group.scale.setScalar(0.85);
+            return group;
+        }
+
+        function createChibiMicroscope() {
+            const group = new THREE.Group();
+            const matMint = new THREE.MeshStandardMaterial({ color: 0x00e5ff, roughness: 0.2, metalness: 0.1 });
+            const matPink = new THREE.MeshStandardMaterial({ color: 0xff2d8d, roughness: 0.3, metalness: 0.2 });
+            const matMetal = new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.15, metalness: 0.9 });
+            const matBlack = new THREE.MeshStandardMaterial({ color: 0x111116, roughness: 0.5 });
+
+            const base = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.28, 0.08, 12), matMint);
+            group.add(base);
+
+            const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.55, 8), matMint);
+            arm.position.set(-0.1, 0.28, 0);
+            arm.rotation.z = -0.25;
+            group.add(arm);
+
+            const stage = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.04, 0.28), matBlack);
+            stage.position.set(0.04, 0.24, 0);
+            group.add(stage);
+
+            const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.38, 12), matPink);
+            tube.position.set(0.05, 0.46, 0);
+            tube.rotation.z = 0.25;
+            group.add(tube);
+
+            const eyepiece = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.08, 0.14, 12), matMetal);
+            eyepiece.position.set(0.1, 0.64, 0);
+            eyepiece.rotation.z = 0.25;
+            group.add(eyepiece);
+
+            group.scale.setScalar(0.75);
+            return group;
+        }
+
+        function createChibiMagnifyingGlass() {
+            const group = new THREE.Group();
+            const goldMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.85, roughness: 0.2 });
+            const glassMat = new THREE.MeshPhysicalMaterial({
+                color: 0xffffff, transmission: 0.98, roughness: 0.02, ior: 2.0, thickness: 1.2
+            });
+            const handleMat = new THREE.MeshStandardMaterial({ color: 0x00f2fe, roughness: 0.3 });
+
+            const rim = new THREE.Mesh(new THREE.TorusGeometry(0.24, 0.035, 8, 16), goldMat);
+            group.add(rim);
+
+            const lens = new THREE.Mesh(new THREE.CylinderGeometry(0.23, 0.23, 0.02, 16), glassMat);
+            lens.rotation.x = Math.PI / 2;
+            group.add(lens);
+
+            const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.048, 0.42, 8), handleMat);
+            handle.position.set(0.25, -0.25, 0);
+            handle.rotation.z = Math.PI / 4;
+            group.add(handle);
+
+            group.scale.setScalar(0.75);
+            return group;
+        }
+
+        function createChibiNotebook() {
+            const group = new THREE.Group();
+            const coverMat = new THREE.MeshStandardMaterial({ color: 0x00f2fe, roughness: 0.35 });
+            const pageMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6 });
+            const bookmarkMat = new THREE.MeshStandardMaterial({ color: 0xff2d8d, roughness: 0.2 });
+
+            const book = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.55, 0.08), coverMat);
+            group.add(book);
+
+            const pages = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.51, 0.06), pageMat);
+            pages.position.x = 0.03;
+            group.add(pages);
+
+            const bookmark = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.18, 0.02), bookmarkMat);
+            bookmark.position.set(0.08, -0.26, 0.04);
+            group.add(bookmark);
+
+            group.scale.setScalar(0.75);
+            return group;
+        }
+
+        function buildMedicalAndScienceChibiProps() {
+            const T = BOOK.thickness;
+            const bevel = BOOK.bevel;
+
+            const propsConfigs = [
+                { create: createChibiMicroscope, side: 'front', x: 0.95, y: 0.15, z: T + bevel + 0.12, rotY: 0, rotZ: 0.15 },
+                { create: createChibiStethoscope, side: 'front', x: 3.65, y: 0.15, z: T + bevel + 0.12, rotY: 0, rotZ: -0.2 },
+                { create: createChibiLabCoat, side: 'front', x: 2.3, y: 2.45, z: T + bevel + 0.12, rotY: 0, rotZ: 0.0 },
+                { create: createChibiTestTubeRack, side: 'front', x: 2.3, y: -2.5, z: T + bevel + 0.12, rotY: 0, rotZ: 0.0 },
+
+                { create: createChibiMagnifyingGlass, side: 'back', x: 1.2, y: 0.0, z: -T - bevel - 0.12, rotY: Math.PI, rotZ: -0.3 },
+                { create: createChibiNotebook, side: 'back', x: 3.4, y: 0.0, z: -T - bevel - 0.12, rotY: Math.PI, rotZ: 0.2 },
+                { create: createChibiStethoscope, side: 'back', x: 2.3, y: 2.4, z: -T - bevel - 0.12, rotY: Math.PI, rotZ: 0.1 },
+                { create: createChibiLabCoat, side: 'back', x: 2.3, y: -2.4, z: -T - bevel - 0.12, rotY: Math.PI, rotZ: -0.8 }
+            ];
+
+            propsConfigs.forEach((cfg, idx) => {
+                const mesh = cfg.create();
+                const hinge = (cfg.side === 'front') ? rightCoverHinge : leftCoverHinge;
+
+                const anchor = new THREE.Object3D();
+                anchor.position.set(cfg.x, cfg.y, cfg.z);
+                anchor.rotation.set(0, cfg.rotY, cfg.rotZ);
+                hinge.add(anchor);
+
+                const theta = (idx / propsConfigs.length) * Math.PI * 2 + 0.3;
+                const rGalaxy = 5.2 + (idx % 3) * 1.8;
+                const phi = ((idx % 4) - 1.5) * 0.4;
+
+                mesh.userData = {
+                    isProp: true,
+                    anchor: anchor,
+                    galaxyPos: new THREE.Vector3(rGalaxy * Math.cos(theta), phi * 3.2, rGalaxy * Math.sin(theta)),
+                    targetPos: new THREE.Vector3(),
+                    orbitAngle: theta,
+                    orbitRadius: rGalaxy,
+                    orbitSpeed: 0.09 + (idx % 2) * 0.04,
+                    rotSpeedX: 0.6 + Math.random() * 0.6,
+                    rotSpeedY: 0.8 + Math.random() * 0.6
+                };
+
+                scene.add(mesh);
+                chibiProps.push(mesh);
+            });
+        }
+
+        function setupInteractions() {
+            fsmButtons.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const s = parseInt(e.currentTarget.getAttribute('data-state'));
+                    FSM.setTarget(s);
+                });
+            });
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                composer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            window.addEventListener('pointerdown', onPointerDown);
+        }
+
+        function onPointerDown(e) {
+            if (e.target.closest('#fsm-ui') || e.target.closest('#ai-hud')) return;
+
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            if (FSM.currentState === STATES.SCATTER_GALAXY || FSM.currentState === STATES.FOCUS_PHOTO) {
+                const intersects = raycaster.intersectObjects(allPhotoCards, true);
+
+                if (intersects.length > 0) {
+                    let top = intersects[0].object;
+                    while (top.parent && !top.userData.isPhoto) top = top.parent;
+                    if (top.userData.isPhoto) {
+                        FSM.setTarget(STATES.FOCUS_PHOTO, top.userData.index);
+                        return;
+                    }
+                } else if (FSM.currentState === STATES.FOCUS_PHOTO) {
+                    FSM.setTarget(STATES.SCATTER_GALAXY);
+                }
+            } else if (FSM.currentState === STATES.BOOK_CLOSED) {
+                FSM.setTarget(STATES.BOOK_OPENING);
+            }
+        }
+
+        async function setupMediaPipeAI() {
+            try {
+                aiStatus.textContent = "NẠP AI GESTURE...";
+                const vision = await FilesetResolver.forVisionTasks(
+                    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.9/wasm"
+                );
+
+                handLandmarker = await HandLandmarker.createFromOptions(vision, {
+                    baseOptions: {
+                        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+                        delegate: "GPU"
+                    },
+                    runningMode: "VIDEO",
+                    numHands: 1
+                });
+
+                aiStatus.textContent = "AI SẴN SÀNG";
+            } catch (err) {
+                aiStatus.textContent = "LỖI NẠP AI";
+            }
+        }
+
+        toggleCamBtn.addEventListener('click', async () => {
+            if (!handLandmarker) await setupMediaPipeAI();
+
+            if (!webcamRunning) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: { width: 320, height: 240, frameRate: { ideal: 30 } }
+                    });
+                    webcamElement.srcObject = stream;
+                    webcamElement.addEventListener("loadeddata", () => {
+                        webcamElement.play();
+                        webcamRunning = true;
+                        toggleCamBtn.textContent = "TẮT CAMERA AI";
+                        aiStatus.textContent = "AI ĐANG QUAN SÁT";
+                        aiDot.style.background = "#00ff66";
+                    });
+                } catch (e) {
+                    aiStatus.textContent = "TỪ CHỐI CAMERA";
+                }
+            } else {
+                const stream = webcamElement.srcObject;
+                if (stream) {
+                    stream.getTracks().forEach(t => t.stop());
+                }
+                webcamRunning = false;
+                toggleCamBtn.textContent = "BẬT CAMERA AI";
+                aiStatus.textContent = "CAMERA ĐÃ TẮT";
+                handCtx.clearRect(0, 0, handCanvas.width, handCanvas.height);
+            }
         });
+
+        function processHandGesturesAsync() {
+            if (!webcamRunning || !handLandmarker || isProcessingAI) return;
+            if (webcamElement.readyState < 2) return;
+
+            if (webcamElement.currentTime !== lastVideoTime) {
+                lastVideoTime = webcamElement.currentTime;
+                isProcessingAI = true;
+
+                try {
+                    const results = handLandmarker.detectForVideo(webcamElement, performance.now());
+                    
+                    handCanvas.width = webcamElement.videoWidth || 320;
+                    handCanvas.height = webcamElement.videoHeight || 240;
+                    handCtx.clearRect(0, 0, handCanvas.width, handCanvas.height);
+
+                    if (results.landmarks && results.landmarks.length > 0) {
+                        const lm = results.landmarks[0];
+                        drawNeonHandPiP(lm);
+                        interpretGestureMapping(lm);
+                    } else {
+                        aiStatus.textContent = "TÌM BÀN TAY...";
+                        prevIndexTipY = null;
+                    }
+                } catch(err) {
+                    console.warn("AI Frame Skip:", err);
+                } finally {
+                    isProcessingAI = false;
+                }
+            }
+        }
+
+        function drawNeonHandPiP(lm) {
+            const w = handCanvas.width;
+            const h = handCanvas.height;
+
+            const conns = [
+                [0,1],[1,2],[2,3],[3,4],
+                [0,5],[5,6],[6,7],[7,8],
+                [5,9],[9,10],[10,11],[11,12],
+                [9,13],[13,14],[14,15],[15,16],
+                [13,17],[17,18],[18,19],[19,20],
+                [0,17]
+            ];
+
+            handCtx.strokeStyle = '#00ff66';
+            handCtx.lineWidth = 2.5;
+            handCtx.shadowColor = '#00ff66';
+            handCtx.shadowBlur = 8;
+
+            conns.forEach(([a, b]) => {
+                handCtx.beginPath();
+                handCtx.moveTo(lm[a].x * w, lm[a].y * h);
+                handCtx.lineTo(lm[b].x * w, lm[b].y * h);
+                handCtx.stroke();
+            });
+
+            handCtx.fillStyle = '#ffffff';
+            lm.forEach((pt, i) => {
+                handCtx.beginPath();
+                handCtx.arc(pt.x * w, pt.y * h, (i === 4 || i === 8) ? 4.5 : 2.5, 0, Math.PI * 2);
+                handCtx.fill();
+            });
+        }
+
+        function interpretGestureMapping(lm) {
+            const wrist = lm[0];
+            const thumbTip = lm[4];
+            const indexTip = lm[8];
+            const middleTip = lm[12];
+            const ringTip = lm[16];
+            const pinkyTip = lm[20];
+            const middleMCP = lm[9];
+
+            const palmSize = Math.hypot(wrist.x - middleMCP.x, wrist.y - middleMCP.y);
+
+            const dIndex = Math.hypot(indexTip.x - wrist.x, indexTip.y - wrist.y);
+            const dMiddle = Math.hypot(middleTip.x - wrist.x, middleTip.y - wrist.y);
+            const dRing = Math.hypot(ringTip.x - wrist.x, ringTip.y - wrist.y);
+            const dPinky = Math.hypot(pinkyTip.x - wrist.x, pinkyTip.y - wrist.y);
+
+            const pinchDist = Math.hypot(thumbTip.x - indexTip.x, thumbTip.y - indexTip.y);
+
+            const tilt = (middleMCP.x - wrist.x);
+            handRotationBias = THREE.MathUtils.lerp(handRotationBias, tilt * 2.5, 0.1);
+
+            if (Number.isFinite(palmSize) && palmSize > 0.05) {
+                smoothedPalmSize = THREE.MathUtils.lerp(smoothedPalmSize, palmSize, 0.08);
+                if (FSM.currentState === STATES.SCATTER_GALAXY || FSM.currentState === STATES.BOOK_CLOSED) {
+                    const mappedDist = THREE.MathUtils.mapLinear(smoothedPalmSize, 0.12, 0.38, 52.0, 8.0);
+                    if (Number.isFinite(mappedDist)) {
+                        targetCameraDistance = THREE.MathUtils.clamp(mappedDist, 6.0, 65.0);
+                    }
+                }
+            }
+
+            const now = performance.now();
+
+            if (FSM.currentState === STATES.FOCUS_PHOTO) {
+                const isPointing = (dIndex > palmSize * 1.35) && (dRing < palmSize * 1.15) && (dPinky < palmSize * 1.05);
+                if (isPointing && prevIndexTipY !== null) {
+                    const deltaY = indexTip.y - prevIndexTipY;
+                    if (Math.abs(deltaY) > 0.065 && (now - swipeDebounceTimer > 450)) {
+                        if (deltaY < -0.065) {
+                            nextPhoto();
+                            aiStatus.textContent = "VUỐT LÊN: ẢNH KẾ TIẾP";
+                        } else if (deltaY > 0.065) {
+                            prevPhoto();
+                            aiStatus.textContent = "VUỐT XUỐNG: ẢNH TRƯỚC";
+                        }
+                        swipeDebounceTimer = now;
+                    }
+                }
+                prevIndexTipY = indexTip.y;
+            } else {
+                prevIndexTipY = null;
+            }
+
+            if (now - gestureDebounceTimer < 750) return;
+
+            if (pinchDist < 0.048 || (pinchDist / palmSize < 0.24)) {
+                aiStatus.textContent = "CHÚM TAY: CHỌN ẢNH";
+                const screenX = (1.0 - indexTip.x) * 2 - 1;
+                const screenY = -(indexTip.y * 2 - 1);
+                
+                raycaster.setFromCamera(new THREE.Vector2(screenX, screenY), camera);
+                const intersects = raycaster.intersectObjects(allPhotoCards, true);
+
+                if (intersects.length > 0) {
+                    let top = intersects[0].object;
+                    while (top.parent && !top.userData.isPhoto) top = top.parent;
+                    if (top.userData.isPhoto) {
+                        FSM.setTarget(STATES.FOCUS_PHOTO, top.userData.index);
+                        gestureDebounceTimer = now;
+                        return;
+                    }
+                } else if (FSM.currentState === STATES.SCATTER_GALAXY) {
+                    FSM.setTarget(STATES.FOCUS_PHOTO, selectedPhotoIndex);
+                    gestureDebounceTimer = now;
+                    return;
+                }
+            }
+
+            const isFist = (dIndex < palmSize * 1.05) && (dMiddle < palmSize * 1.05) &&
+                           (dRing < palmSize * 0.95) && (dPinky < palmSize * 0.90);
+            if (isFist) {
+                aiStatus.textContent = "NẮM TAY: ĐÓNG SÁCH";
+                if (FSM.targetState !== STATES.BOOK_CLOSED) {
+                    FSM.setTarget(STATES.BOOK_CLOSED);
+                    gestureDebounceTimer = now;
+                    return;
+                }
+            }
+
+            const isOpenHand = (dIndex > palmSize * 1.45) && (dMiddle > palmSize * 1.55) &&
+                               (dRing > palmSize * 1.45) && (dPinky > palmSize * 1.30);
+            if (isOpenHand) {
+                aiStatus.textContent = "XÒE TAY: MỞ SÁCH & BUNG GALAXY";
+                if (FSM.targetState === STATES.BOOK_CLOSED) {
+                    FSM.setTarget(STATES.BOOK_OPENING);
+                    gestureDebounceTimer = now;
+                    return;
+                } else if (FSM.targetState === STATES.FOCUS_PHOTO) {
+                    FSM.setTarget(STATES.SCATTER_GALAXY);
+                    gestureDebounceTimer = now;
+                    return;
+                } else if (FSM.targetState !== STATES.SCATTER_GALAXY && FSM.targetState !== STATES.PARTICLE_BURST) {
+                    FSM.setTarget(STATES.PARTICLE_BURST);
+                    gestureDebounceTimer = now;
+                    return;
+                }
+            }
+        }
+
+        // ====================================================================
+        // 11. CHOREOGRAPHY ANIMATION LOOP
+        // ====================================================================
+        const vPos = new THREE.Vector3();
+        const qRot = new THREE.Quaternion();
 
         function animate() {
             requestAnimationFrame(animate);
+
+            const dt = Math.min(clock.getDelta(), 0.05);
+            const elapsed = clock.getElapsedTime();
+
+            processHandGesturesAsync();
+
+            // THU PHÓNG CAMERA AN TOÀN
+            if ((FSM.currentState === STATES.SCATTER_GALAXY || FSM.currentState === STATES.BOOK_CLOSED) && Number.isFinite(targetCameraDistance)) {
+                const diff = new THREE.Vector3().subVectors(camera.position, controls.target);
+                if (diff.lengthSq() > 0.001) {
+                    const camDir = diff.normalize();
+                    const currentDist = camera.position.distanceTo(controls.target);
+                    const smoothDist = THREE.MathUtils.lerp(currentDist, targetCameraDistance, dt * 2.5);
+                    if (Number.isFinite(smoothDist)) {
+                        camera.position.copy(controls.target).addScaledVector(camDir, smoothDist);
+                    }
+                }
+            }
+
             controls.update();
-            rings.forEach(r => r.mesh.rotation.z += 0.01 * r.speed);
-            renderer.render(scene, camera);
+            FSM.update(dt);
+
+            let targetOpen = 0.0;
+            let targetBurst = 0.0;
+            let targetGalaxy = 0.0;
+            let targetMeshOpac = 1.0;
+            let targetFocusDim = 1.0;
+
+            const cur = FSM.targetState;
+
+            if (cur === STATES.BOOK_CLOSED) {
+                targetOpen = 0.0; targetBurst = 0.0; targetGalaxy = 0.0; targetMeshOpac = 1.0;
+            } else if (cur === STATES.BOOK_OPENING) {
+                targetOpen = 1.0; targetBurst = 0.0; targetGalaxy = 0.0; targetMeshOpac = 1.0;
+            } else if (cur === STATES.OPEN_HOLD) {
+                targetOpen = 1.0; targetBurst = 0.06; targetGalaxy = 0.0; targetMeshOpac = 1.0;
+            } else if (cur === STATES.PARTICLE_BURST) {
+                targetOpen = 1.0; targetBurst = 1.0; targetGalaxy = 0.35; targetMeshOpac = 0.0;
+            } else if (cur === STATES.SCATTER_GALAXY) {
+                targetOpen = 1.0; targetBurst = 1.0; targetGalaxy = 1.0; targetMeshOpac = 0.0;
+            } else if (cur === STATES.FOCUS_PHOTO) {
+                targetOpen = 1.0; targetBurst = 1.0; targetGalaxy = 1.0; targetMeshOpac = 0.0;
+                targetFocusDim = 0.65;
+            }
+
+            FSM.openProgressLerp = THREE.MathUtils.lerp(FSM.openProgressLerp, targetOpen, dt * 4.5);
+            FSM.burstProgressLerp = THREE.MathUtils.lerp(FSM.burstProgressLerp, targetBurst, dt * 4.0);
+            FSM.galaxyProgressLerp = THREE.MathUtils.lerp(FSM.galaxyProgressLerp, targetGalaxy, dt * 3.5);
+            FSM.bookMeshOpacityLerp = THREE.MathUtils.lerp(FSM.bookMeshOpacityLerp, targetMeshOpac, dt * 4.5);
+
+            const openRad = FSM.openProgressLerp * (BOOK.maxOpenRad / 2);
+
+            leftCoverHinge.rotation.y = openRad;
+            rightCoverHinge.rotation.y = -openRad;
+
+            chibiCoverMat.opacity = FSM.bookMeshOpacityLerp;
+            spineMesh.visible = FSM.bookMeshOpacityLerp > 0.01;
+
+            if (titleMesh) {
+                titleMesh.material.opacity = FSM.bookMeshOpacityLerp;
+                titleMesh.visible = FSM.bookMeshOpacityLerp > 0.01;
+            }
+            if (contourLineMesh) {
+                contourLineMesh.material.opacity = FSM.bookMeshOpacityLerp;
+                contourLineMesh.visible = FSM.bookMeshOpacityLerp > 0.01;
+            }
+
+            albumRoot.position.y = Math.sin(elapsed * 0.8) * 0.08;
+
+            if (innerSparksLight) {
+                innerSparksLight.intensity = FSM.openProgressLerp * 6.0 * FSM.bookMeshOpacityLerp;
+            }
+
+            // GÁN AN TOÀN GIÁ TRỊ TỰ XOAY VŨ TRỤ
+            const safeBias = Number.isFinite(handRotationBias) ? handRotationBias : 0.0;
+            FSM.galaxyRotAngle += (0.16 + safeBias * 0.8) * dt;
+
+            if (morphShaderMat) {
+                morphShaderMat.uniforms.uOpenRatio.value = FSM.openProgressLerp;
+                morphShaderMat.uniforms.uBurstRatio.value = FSM.burstProgressLerp;
+                morphShaderMat.uniforms.uGalaxyRatio.value = FSM.galaxyProgressLerp;
+                morphShaderMat.uniforms.uVibrate.value = FSM.vibrateIntensity;
+                morphShaderMat.uniforms.uTime.value = elapsed;
+                morphShaderMat.uniforms.uGalaxyRot.value = FSM.galaxyRotAngle;
+                morphShaderMat.uniforms.uFocusDim.value = THREE.MathUtils.lerp(
+                    morphShaderMat.uniforms.uFocusDim.value, targetFocusDim, dt * 5.0
+                );
+            }
+
+            if (flareShaderMat) {
+                flareShaderMat.uniforms.uTime.value = elapsed;
+                flareShaderMat.uniforms.uGalaxyRatio.value = FSM.galaxyProgressLerp;
+                flareShaderMat.uniforms.uFocusDim.value = THREE.MathUtils.lerp(
+                    flareShaderMat.uniforms.uFocusDim.value, targetFocusDim, dt * 5.0
+                );
+            }
+
+            heroGiantHearts.forEach((h, idx) => {
+                h.angle += h.speed * dt * (cur === STATES.FOCUS_PHOTO ? 0.3 : 1.0);
+                const expand = THREE.MathUtils.lerp(1.0, 1.85, FSM.galaxyProgressLerp);
+                const r = h.baseRad * expand;
+
+                h.mesh.position.x = Math.cos(h.angle) * r;
+                h.mesh.position.z = Math.sin(h.angle) * r;
+                h.mesh.position.y = Math.sin(elapsed * 1.2 + idx) * 1.2 + Math.sin(h.inclination) * (r * 0.5);
+
+                h.mesh.rotation.x += 0.8 * dt;
+                h.mesh.rotation.y += 1.0 * dt;
+
+                const targetScale = (cur === STATES.FOCUS_PHOTO) ? 0.85 : 1.65;
+                h.mesh.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), dt * 4.0);
+            });
+
+            const updateStarGroup = (group) => {
+                group.forEach(st => {
+                    st.theta += st.speed * dt * (cur === STATES.FOCUS_PHOTO ? 0.3 : 1.0);
+                    const expand = THREE.MathUtils.lerp(0.8, 1.5, FSM.galaxyProgressLerp);
+                    const curR = st.rad * expand;
+
+                    st.mesh.position.x = curR * Math.sin(st.phi) * Math.cos(st.theta);
+                    st.mesh.position.y = curR * Math.sin(st.phi) * Math.sin(st.theta) * 0.9;
+                    st.mesh.position.z = curR * Math.cos(st.phi);
+
+                    st.mesh.rotation.x += st.rotSpeedX * dt;
+                    st.mesh.rotation.y += st.rotSpeedY * dt;
+
+                    const pulse = 1.0 + 0.35 * Math.sin(elapsed * 3.5 + st.pulsePhase);
+                    st.mesh.scale.setScalar((cur === STATES.FOCUS_PHOTO ? 0.55 : 0.8) * pulse);
+                });
+            };
+
+            updateStarGroup(stars3Point);
+            updateStarGroup(stars4Point);
+            updateStarGroup(stars5Point);
+
+            allPhotoCards.forEach((card, idx) => {
+                const u = card.userData;
+                const isSelected = (cur === STATES.FOCUS_PHOTO && idx === selectedPhotoIndex);
+
+                const curOrbitAngle = u.orbitAngle + FSM.galaxyRotAngle * (u.orbitSpeed * 2.5);
+                const ox = Math.cos(curOrbitAngle) * u.orbitRadius;
+                const oz = Math.sin(curOrbitAngle) * u.orbitRadius;
+                const oy = u.galaxyPos.y + Math.sin(elapsed * 1.5 + idx) * 0.35;
+                const galaxyWorldPos = new THREE.Vector3(ox, oy, oz);
+
+                if (u.isCoverPhoto) {
+                    u.anchor.getWorldPosition(vPos);
+                    u.anchor.getWorldQuaternion(qRot);
+
+                    if (isSelected) {
+                        card.visible = true;
+                        const camDir = new THREE.Vector3();
+                        camera.getWorldDirection(camDir);
+                        u.targetPos.copy(camera.position).addScaledVector(camDir, 5.0);
+
+                        card.position.lerp(u.targetPos, dt * 5.0);
+                        card.quaternion.slerp(camera.quaternion, dt * 6.0);
+                        card.scale.lerp(new THREE.Vector3(1.35, 1.35, 1.35), dt * 6.0);
+                    } else if (FSM.galaxyProgressLerp < 0.001) {
+                        card.visible = true;
+                        card.position.copy(vPos);
+                        card.quaternion.copy(qRot);
+                        card.scale.set(1.0, 1.0, 1.0);
+                    } else {
+                        card.visible = true;
+                        u.targetPos.lerpVectors(vPos, galaxyWorldPos, FSM.galaxyProgressLerp);
+                        card.position.lerp(u.targetPos, dt * 6.0);
+
+                        card.lookAt(0, oy * 0.5, 0);
+                        const targetScale = (cur === STATES.FOCUS_PHOTO) ? 0.5 : 0.95;
+                        card.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), dt * 6.0);
+                    }
+                } else {
+                    if (cur === STATES.BOOK_CLOSED || cur === STATES.BOOK_OPENING || cur === STATES.OPEN_HOLD) {
+                        card.visible = false;
+                        card.scale.set(0.0001, 0.0001, 0.0001);
+                        card.position.set(0, 0, 0);
+                    } else if (isSelected) {
+                        card.visible = true;
+                        const camDir = new THREE.Vector3();
+                        camera.getWorldDirection(camDir);
+                        u.targetPos.copy(camera.position).addScaledVector(camDir, 5.0);
+
+                        card.position.lerp(u.targetPos, dt * 5.0);
+                        card.quaternion.slerp(camera.quaternion, dt * 6.0);
+                        card.scale.lerp(new THREE.Vector3(1.35, 1.35, 1.35), dt * 6.0);
+                    } else {
+                        card.visible = true;
+                        card.position.lerp(galaxyWorldPos, dt * 5.0);
+                        card.lookAt(0, oy * 0.5, 0);
+                        const targetScale = (cur === STATES.FOCUS_PHOTO) ? 0.5 : 0.95;
+                        card.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), dt * 6.0);
+                    }
+                }
+            });
+
+            chibiProps.forEach((prop, idx) => {
+                const u = prop.userData;
+
+                u.anchor.getWorldPosition(vPos);
+                u.anchor.getWorldQuaternion(qRot);
+
+                const curOrbitAngle = u.orbitAngle + FSM.galaxyRotAngle * (u.orbitSpeed * 2.2);
+                const ox = Math.cos(curOrbitAngle) * u.orbitRadius;
+                const oz = Math.sin(curOrbitAngle) * u.orbitRadius;
+                const oy = u.galaxyPos.y + Math.sin(elapsed * 1.4 + idx) * 0.4;
+                const galaxyWorldPos = new THREE.Vector3(ox, oy, oz);
+
+                if (FSM.galaxyProgressLerp < 0.001) {
+                    prop.position.copy(vPos);
+                    prop.quaternion.copy(qRot);
+                    prop.scale.set(0.75, 0.75, 0.75);
+                } else {
+                    u.targetPos.lerpVectors(vPos, galaxyWorldPos, FSM.galaxyProgressLerp);
+                    prop.position.lerp(u.targetPos, dt * 6.0);
+
+                    prop.rotation.x += u.rotSpeedX * dt;
+                    prop.rotation.y += u.rotSpeedY * dt;
+
+                    const targetScale = (cur === STATES.FOCUS_PHOTO) ? 0.55 : (0.75 + FSM.galaxyProgressLerp * 0.25);
+                    prop.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), dt * 4.0);
+                }
+            });
+
+            composer.render();
         }
-        animate();
     </script>
 </body>
 </html>
